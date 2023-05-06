@@ -61,6 +61,16 @@ intents.webhooks = True
 
 bot = commands.Bot(command_prefix=botPrefix, intents=intents)
 
+
+def checkIfBotIsConfigured():
+    if os.exists("botData/setup.txt"):
+        with open("botData/setup.txt", "r") as f:
+            if f.read() == "1":
+                return True
+            else:
+                return False
+
+
 @bot.event
 async def on_ready():
     print(colorama.Fore.GREEN + f"Logged in as {bot.user.name}#{bot.user.discriminator} ({bot.user.id})")
@@ -157,10 +167,14 @@ async def setupBot(ctx):
 
 @bot.command()
 async def ping(ctx):
-    before = time.monotonic()
-    message = await ctx.send("Pong!")
-    await message.edit(content="Calculating ping...")
-    await message.edit(content=f"Calculated ping: {round((time.monotonic() - before) * 1000)}ms")
+    if checkIfBotIsConfigured() == False:
+        await ctx.send("Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
+        return
+    else:
+        before = time.monotonic()
+        message = await ctx.send("Pong!")
+        await message.edit(content="Calculating ping...")
+        await message.edit(content=f"Calculated ping: {round((time.monotonic() - before) * 1000)}ms")
 
     
     
