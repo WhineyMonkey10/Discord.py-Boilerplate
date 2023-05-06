@@ -189,7 +189,7 @@ async def warn(ctx, member: discord.Member, *, reason=None):
                 with open("botData/punishments/warns.txt", "a") as f:
                     f.write(str(member.id) + ":" + reason + "\n")
                 await member.send("You have been warned for " + reason)
-                await ctx.send("Warning issued!")
+                await ctx.send("Warning issued! If they have DMs enabled, they will be notified!")
            
 
 @warn.error
@@ -207,18 +207,21 @@ async def getWarns(ctx, member: discord.Member):
             warns = f.readlines()
             f.close()
         message = await ctx.send("Getting warns...")
-        warns = []
+        warnList = []
         for warn in warns:
             if str(member.id) in warn:
-                warn = warn.replace(str(member.id) + ":", "")
-                warns.append(warn)
-        if len(warns) == 0:
+                warn = warn.replace(str(member.id) + ":", "Reason: ")
+                warnList.append(warn)
+        if len(warnList) == 0:
             await message.edit(content="This user has no warns!")
         else:
-            await message.edit(content="This user has " + str(len(warns)) + " warns!")
-            # Create a message in an ordered list format with the warn reasons
-            warns = "\n".join(warns)
-            await ctx.send("Warns:\n" + warns)
+            await message.edit(content="This user has " + str(len(warnList)) + " warn(s)!")
+            
+            # Format the warnList to be in a nice format
+            formattedWarnList = ""
+            for warn in warnList:
+                formattedWarnList = formattedWarnList + warn
+            await ctx.send(formattedWarnList)
 
 bot.run(botToken)
     
