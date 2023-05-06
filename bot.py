@@ -76,7 +76,7 @@ async def on_ready():
             
             print(colorama.Fore.GREEN + "Bot role id: " + botRoleID)
             print(colorama.Fore.GREEN + "Permissions role id: " + permissionsRoleID)
-            print(colorama.Fore.GREEN + "Bot ready to use!")
+            print(colorama.Fore.GREEN + "The bot is ready to use!")
     else:
         print(colorama.Fore.RED + "Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
             
