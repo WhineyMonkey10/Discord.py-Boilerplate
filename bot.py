@@ -70,8 +70,11 @@ async def on_ready():
         print(colorama.Fore.GREEN + "Confirming configuration...")
         
         with open("botData/roleIDs.txt", "r") as f:
-            roleIDWithPermissions = f.readlines()[2].strip()
-            botROleID = f.readlines()[1].strip()
+            botRoleID = f.readline().strip()
+            permissionsRoleID = f.readline().strip()
+            
+            print(colorama.Fore.GREEN + "Bot role id: " + botRoleID)
+            print(colorama.Fore.GREEN + "Permissions role id: " + permissionsRoleID)
         
     else:
         print(colorama.Fore.RED + "Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
