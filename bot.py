@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 
 import colorama
 import random
+import time
 
 
 ### Setup Configurations
@@ -75,7 +76,7 @@ async def on_ready():
             
             print(colorama.Fore.GREEN + "Bot role id: " + botRoleID)
             print(colorama.Fore.GREEN + "Permissions role id: " + permissionsRoleID)
-        
+            print(colorama.Fore.GREEN + "Bot ready to use!")
     else:
         print(colorama.Fore.RED + "Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
             
@@ -150,6 +151,20 @@ async def setupBot(ctx):
                     f.close()
                 
                 await ctx.send("Bot setup complete!")
+                
+
+# Main commands
+
+@bot.command()
+async def ping(ctx):
+    before = time.monotonic()
+    message = await ctx.send("Pong!")
+    await message.edit(content="Calculating ping...")
+    await message.edit(content=f"Calculated ping: {round((time.monotonic() - before) * 1000)}ms")
+
+    
+    
+     
 
 
 bot.run(botToken)
