@@ -30,7 +30,7 @@ load_dotenv()
 botToken = str(os.getenv("TOKEN"))
 botPrefix = os.getenv("PREFIX")
 botStatus = os.getenv("STATUS")
-
+permissionsRoleID = os.getenv("PERMISSIONS_ROLE_ID")
 
 # Check and or create the botData folder
 if os.path.exists("botData"):
@@ -63,7 +63,7 @@ bot = commands.Bot(command_prefix=botPrefix, intents=intents)
 
 
 def checkIfBotIsConfigured():
-    if os.exists("botData/setup.txt"):
+    if os.path.exists("botData/setup.txt"):
         with open("botData/setup.txt", "r") as f:
             if f.read() == "1":
                 return True
@@ -105,30 +105,6 @@ async def setupBot(ctx):
         with open("botData/setup.txt", "r") as f:
             if f.read() == "1":
                 await ctx.send("Bot already setup!")
-            else:
-                f.close()
-                await ctx.send("Bot not setup! Setting up...")
-                with open("botData/setup.txt", "w") as f:
-                    f.write("1")
-                    f.close()
-                await ctx.send("Confirming configuration...")
-                await ctx.send("Bot prefix: " + botPrefix)
-                await ctx.send("Bot status: " + botStatus)
-                
-                await ctx.send("Please enter the role id of the role that will be used for the bot")
-                def check(message):
-                    return message.author == ctx.author and message.channel == ctx.channel
-                message = await bot.wait_for('message', check=check)
-                botRoleID = message.content
-                await ctx.send("Please enter the role id of the role that has permissions to use the bot")
-                message = await bot.wait_for('message', check=check)
-                permissionsRoleID = message.content
-                
-                with open("botData/roleIDs.txt", "w") as f:
-                    f.write(botRoleID + "\n" + permissionsRoleID)
-                    f.close()
-                
-                await ctx.send("Bot setup complete!")
     else:        
         with open("botData/setup.txt", "w") as f:
             pass
@@ -152,12 +128,34 @@ async def setupBot(ctx):
                     return message.author == ctx.author and message.channel == ctx.channel
                 message = await bot.wait_for('message', check=check)
                 botRoleID = message.content
-                await ctx.send("Please enter the role id of the role that has permissions to use the bot")
+                await ctx.send("Please enter the name of the role that has permission to use the bot (case sensitive)")
                 message = await bot.wait_for('message', check=check)
                 permissionsRoleID = message.content
                 
                 with open("botData/roleIDs.txt", "w") as f:
                     f.write(botRoleID + "\n" + permissionsRoleID)
+                    f.close()
+                
+                with open(".env", "a") as f:
+                    f.write("\nPERMISSIONS_ROLE_ID=" + permissionsRoleID)
+                    f.close()
+                
+                await ctx.send("Creating config, log and storage files...")
+                
+                os.mkdir("botData/punishments")
+                os.mkdir("botData/punishments/logs")
+                
+                with open("botData/punishments/warns.txt", "x") as f:
+                    pass
+                    f.close()
+                with open("botData/punishments/mutes.txt", "x") as f:
+                    pass
+                    f.close()
+                with open("botData/punishments/logs/kicks.txt", "x") as f:
+                    pass
+                    f.close()
+                with open("botData/punishments/logs/bans.txt", "x") as f:
+                    pass
                     f.close()
                 
                 await ctx.send("Bot setup complete!")
@@ -176,10 +174,51 @@ async def ping(ctx):
         await message.edit(content="Calculating ping...")
         await message.edit(content=f"Calculated ping: {round((time.monotonic() - before) * 1000)}ms")
 
-    
-    
-     
+@bot.command()
+@commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
+async def warn(ctx, member: discord.Member, *, reason=None):
+    if checkIfBotIsConfigured() == False:
+        await ctx.send("Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
+        return
+    else:
+        if reason == None:
+            await ctx.send("Please specify a reason!")
+        else:
+            await ctx.send("Warning " + member.mention + " for " + reason)
+            if os.path.exists("botData/punishments/warns.txt"):
+                with open("botData/punishments/warns.txt", "a") as f:
+                    f.write(str(member.id) + ":" + reason + "\n")
+                await member.send("You have been warned for " + reason)
+                await ctx.send("Warning issued!")
+           
 
+@warn.error
+async def warn_error(ctx, error):
+    await ctx.send("You do not have permission to use this command! Or an error occured!")
+
+@bot.command()
+@commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
+async def getWarns(ctx, member: discord.Member):
+    if checkIfBotIsConfigured() == False:
+        await ctx.send("Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
+        return
+    else:
+        with open("botData/punishments/warns.txt", "r") as f:
+            warns = f.readlines()
+            f.close()
+        message = await ctx.send("Getting warns...")
+        warns = []
+        for warn in warns:
+            if str(member.id) in warn:
+                warn = warn.replace(str(member.id) + ":", "")
+                warns.append(warn)
+        if len(warns) == 0:
+            await message.edit(content="This user has no warns!")
+        else:
+            await message.edit(content="This user has " + str(len(warns)) + " warns!")
+            # Create a message in an ordered list format with the warn reasons
+            warns = "\n".join(warns)
+            await ctx.send("Warns:\n" + warns)
 
 bot.run(botToken)
     
