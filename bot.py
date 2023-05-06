@@ -24,6 +24,8 @@ import random
 
 ### Setup Configurations
 
+load_dotenv()
+
 botToken = str(os.getenv("TOKEN"))
 botPrefix = os.getenv("PREFIX")
 botStatus = os.getenv("STATUS")
