@@ -1,8 +1,5 @@
 discord==1.7.3
 python-dotenv==0.21.0
 discord-py-interactions==5.3.1
-<<<<<<< HEAD
-colorama=0.4.4
-=======
-colorama=0.4.4
->>>>>>> 62768fa23949164684085f51bbf2e31b59611de5
+colorama==0.4.4
+asyncio==3.4.3

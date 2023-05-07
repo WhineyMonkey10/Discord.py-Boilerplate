@@ -13,6 +13,8 @@ from discord.ui import Button, View
 ## System Imports
 
 import os
+import sys
+import asyncio
 
 ## Connfiguration Imports
 
@@ -91,8 +93,10 @@ def setEnvVariable(variableName, value):
 
 async def cycleStatus(messages, delay):
     while True:
-        await bot.change_presence(activity=discord.Game(name=random.choice(messages)))
-        time.sleep(delay)
+        for message in messages:
+            message = message.strip()
+            await bot.change_presence(activity=discord.Game(name=message))
+            await asyncio.sleep(int(delay))
     
 
 @bot.event
@@ -122,6 +126,7 @@ async def on_ready():
             print(colorama.Fore.GREEN + "Permissions role id: " + permissionsRoleID)
             print(colorama.Fore.GREEN + "The bot is ready to use!")
     else:
+        await bot.change_presence(activity=discord.Game(name="Run " + botPrefix + "setupBot"))
         print(colorama.Fore.RED + "Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
             
     
@@ -152,8 +157,6 @@ async def setupBot(ctx):
                 await ctx.send("Bot not setup! Setting up...")
                 await ctx.send("Confirming configuration...")
                 await ctx.send("Bot prefix: " + botPrefix)
-                await ctx.send("Bot status: " + botStatus)
-                
                 await ctx.send("Please enter the role id of the role that will be used for the bot")
                 def check(message):
                     return message.author == ctx.author and message.channel == ctx.channel
@@ -201,7 +204,7 @@ async def setupBot(ctx):
                 message = await bot.wait_for('message', check=check)
                 amountOfStatusMessages = int(message.content)
                 for i in range(amountOfStatusMessages):
-                    message = await ctx.send("Please enter the status message")
+                    message = await ctx.send("Please enter the {} status message".format(i + 1))
                     message = await bot.wait_for('message', check=check)
                     statusMessage = message.content
                     with open("botData/statusMessages.txt", "a") as f:
@@ -218,7 +221,8 @@ async def setupBot(ctx):
                     f.write("1")
                     f.close()
                 await ctx.send("Bot setup complete!")
-                
+                await ctx.send("Please restart the bot to apply the changes!")
+
 
 # Main commands
 
