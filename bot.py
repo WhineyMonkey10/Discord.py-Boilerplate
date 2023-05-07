@@ -7,6 +7,8 @@
 
 import discord
 from discord.ext import commands
+from discord.ui import Button, View
+
 
 ## System Imports
 
@@ -39,7 +41,20 @@ else:
     os.mkdir("botData")
 
 
+
 ## Main Code (For now, no comments or clean code will be added beyond this point)
+
+class TicketButtonsView(View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(Button(label="🤖 Bot Support", style=discord.ButtonStyle.primary, custom_id="bot_support"))
+        self.add_item(Button(label="💰 Purchase Support", style=discord.ButtonStyle.primary, custom_id="purchase_support"))
+        
+class ClaimTicketView(View):
+    def __init__(self, user_id):
+        super().__init__()
+        self.add_item(Button(label="Claim Ticket", style=discord.ButtonStyle.green, custom_id="claim_ticket"))
+        self.user_id = user_id
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -60,7 +75,6 @@ intents.voice_states = True
 intents.webhooks = True
 
 bot = commands.Bot(command_prefix=botPrefix, intents=intents)
-
 
 def checkIfBotIsConfigured():
     if os.path.exists("botData/setup.txt"):
@@ -137,6 +151,13 @@ async def setupBot(ctx):
                 await ctx.send("Please enter the name of the role that has permission to use the bot (case sensitive)")
                 message = await bot.wait_for('message', check=check)
                 permissionsRoleID = message.content
+                await ctx.send("Please enter the ID of the ticket category")
+                message = await bot.wait_for('message', check=check)
+                ticketCategoryID = message.content
+                
+                with open(".env", "a") as f:
+                    f.write("\nTICKETS_CATEGORY_ID=" + ticketCategoryID)
+                    f.close()
                 
                 with open("botData/roleIDs.txt", "w") as f:
                     f.write(botRoleID + "\n" + permissionsRoleID)
@@ -347,8 +368,51 @@ async def ban(ctx, member: discord.Member, *, reason=None):
                 f.write(str(member.id) + ":" + reason + "\n")
                 f.close()
             await ctx.send(embed=embed)
-    
+            
+## Support commands
 
+@bot.command()
+@commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
+async def createTicket(ctx):
+    if checkIfBotIsConfigured == False:
+        embed = discord.Embed(title="Bot not setup!", description="Please run the command `{}setupBot` to setup the bot!".format(botPrefix), color=discord.Color.blue())
+        await ctx.send(embed=embed)
+        return
+    else:
+        ticketEmbed = discord.Embed(title="Create a Ticket", description="Click one of the buttons below to create a ticket, make sure that press the right button that is associated with your inquiry!", color=discord.Color.blue())
+        view = TicketButtonsView()
+        await ctx.send(embed=ticketEmbed, view=view)
+
+
+@bot.event
+async def on_interaction(interaction):
+    if interaction.type == discord.InteractionType.component:
+        user = interaction.user
+        custom_id = interaction.data['custom_id']
+        
+        if custom_id == "bot_support" or custom_id == "purchase_support":
+            ticket_name = "bot-support" if custom_id == "bot_support" else "purchase-support"
+            ticketChannel = await interaction.guild.create_text_channel(ticket_name, category=interaction.guild.get_channel(int(os.getenv("TICKETS_CATEGORY_ID"))))
+            ticketEmbed = discord.Embed(title=f"{ticket_name.replace('-', ' ').title()} Ticket", description="Please wait for a staff member to assist you! <@{}>".format(user.id), color=discord.Color.blue())
+            await ticketChannel.send(embed=ticketEmbed)
+
+            claim_ticket_view = ClaimTicketView(user_id=user.id)
+            claim_ticket_embed = discord.Embed(title="Claim Ticket", description="Click the button below to claim this ticket.", color=discord.Color.green())
+            await ticketChannel.send(embed=claim_ticket_embed, view=claim_ticket_view)
+
+            await ticketChannel.set_permissions(user, read_messages=True, send_messages=True)
+            await interaction.response.send_message(f"{ticket_name.replace('-', ' ').title()} ticket created!", ephemeral=True)
+
+        elif custom_id == "claim_ticket":
+            manager_role = discord.utils.get(interaction.guild.roles, name="Manager")
+
+            if manager_role in interaction.user.roles:
+                claimEmbed = discord.Embed(title="Ticket Claimed", description="<@{}> has claimed this ticket!".format(interaction.user.id), color=discord.Color.green())
+                await interaction.channel.send(embed=claimEmbed)
+                await interaction.response.defer()
+                await interaction.message.delete()
+            else:
+                await interaction.response.send_message("Only staff members can claim tickets!", ephemeral=True)
 
 @warn.error
 async def warn_error(ctx, error):
@@ -385,7 +449,6 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         embed = discord.Embed(title="Invalid command!", description="The command you entered does not exist!", color=discord.Color.blue())
         await ctx.send(embed=embed)
-
     
 bot.run(botToken)
     
