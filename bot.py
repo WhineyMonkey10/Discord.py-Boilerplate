@@ -328,6 +328,27 @@ async def unmute(ctx, member: discord.Member):
                     f.close()
                 await ctx.send(embed=embed)
 
+@bot.command()
+@commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
+async def ban(ctx, member: discord.Member, *, reason=None):
+    if checkIfBotIsConfigured == False:
+        embed = discord.Embed(title="Bot not setup!", description="Please run the command `{}setupBot` to setup the bot!".format(botPrefix), color=discord.Color.blue())
+        await ctx.send(embed=embed)
+        return
+    else:
+        if reason == None:
+            embed = discord.Embed(title="Please specify a reason!", color=discord.Color.blue())
+            await ctx.send(embed=embed)
+            return
+        else:
+            await member.ban(reason=reason)
+            embed = discord.Embed(title="Banned!", description="{} has been banned for: {}".format(member.mention, reason), color=discord.Color.blue())
+            with open("botData/punishments/logs/bans.txt", "a") as f:
+                f.write(str(member.id) + ":" + reason + "\n")
+                f.close()
+            await ctx.send(embed=embed)
+    
+
 
 @warn.error
 async def warn_error(ctx, error):
@@ -353,6 +374,18 @@ async def mute_error(ctx, error):
 async def unmute_error(ctx, error):
     embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
     await ctx.send(embex=embed)
+
+@ban.error
+async def ban(ctx, error):
+    embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
+    await ctx.send(embex=embed)
+    
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        embed = discord.Embed(title="Invalid command!", description="The command you entered does not exist!", color=discord.Color.blue())
+        await ctx.send(embed=embed)
+
     
 bot.run(botToken)
     
