@@ -166,62 +166,104 @@ async def setupBot(ctx):
 @bot.command()
 async def ping(ctx):
     if checkIfBotIsConfigured() == False:
-        await ctx.send("Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
+        embed = discord.Embed(title="Bot not setup!", description="Please run the command `{}setupBot` to setup the bot!".format(botPrefix), color=discord.Color.blue())
+        await ctx.send(embed=embed)
         return
     else:
         before = time.monotonic()
         message = await ctx.send("Pong!")
         await message.edit(content="Calculating ping...")
-        await message.edit(content=f"Calculated ping: {round((time.monotonic() - before) * 1000)}ms")
+        embed = discord.Embed(title="Pong!", description=f"Calculated ping: {round((time.monotonic() - before) * 1000)}ms", color=discord.Color.blue())
+        await message.edit(embed=embed)
 
 @bot.command()
 @commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
 async def warn(ctx, member: discord.Member, *, reason=None):
     if checkIfBotIsConfigured() == False:
-        await ctx.send("Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
+        embed = discord.Embed(title="Bot not setup!", description="Please run the command `{}setupBot` to setup the bot!".format(botPrefix), color=discord.Color.blue())
+        await ctx.send(embed=embed)
         return
     else:
         if reason == None:
-            await ctx.send("Please specify a reason!")
+            embed = discord.Embed(title="Please specify a reason!", color=discord.Color.blue())
+            await ctx.send(embed=embed)
         else:
-            await ctx.send("Warning " + member.mention + " for " + reason)
+            embed = discord.Embed(title="Warning issued!", description="{} has been warned for: {}".format(member.mention, reason), color=discord.Color.blue())
+            await ctx.send(embed=embed)
             if os.path.exists("botData/punishments/warns.txt"):
                 with open("botData/punishments/warns.txt", "a") as f:
                     f.write(str(member.id) + ":" + reason + "\n")
                 await member.send("You have been warned for " + reason)
-                await ctx.send("Warning issued! If they have DMs enabled, they will be notified!")
-           
-
-@warn.error
-async def warn_error(ctx, error):
-    await ctx.send("You do not have permission to use this command! Or an error occured!")
+                embed = discord.Embed(title="Warning issued!", description="If they have DMs enabled, they will be notified!", color=discord.Color.blue())
+                await ctx.send(embed=embed)
 
 @bot.command()
 @commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
 async def getWarns(ctx, member: discord.Member):
     if checkIfBotIsConfigured() == False:
-        await ctx.send("Bot not setup! Please run the command    {}{}{}setupBot{}    to setup the bot!{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, botPrefix, colorama.Fore.RED, colorama.Style.RESET_ALL, colorama.Fore.RESET))
+        embed = discord.Embed(title="Bot not setup!", description="Please run the command `{}setupBot` to setup the bot!".format(botPrefix), color=discord.Color.blue())
+        await ctx.send(embed=embed)
         return
     else:
         with open("botData/punishments/warns.txt", "r") as f:
             warns = f.readlines()
             f.close()
-        message = await ctx.send("Getting warns...")
+        embed = discord.Embed(title="Getting warns...", color=discord.Color.blue())
+        message = await ctx.send(embed=embed)
         warnList = []
         for warn in warns:
             if str(member.id) in warn:
                 warn = warn.replace(str(member.id) + ":", "Reason: ")
                 warnList.append(warn)
         if len(warnList) == 0:
-            await message.edit(content="This user has no warns!")
+            embed = discord.Embed(title="No warns found for this user!", color=discord.Color.blue())
+            await message.edit(embed=embed)
         else:
-            await message.edit(content="This user has " + str(len(warnList)) + " warn(s)!")
+            embed = discord.Embed(title="Warns found!", description="This user has {} warn(s)!".format(str(len(warnList))), color=discord.Color.blue())
+            await message.edit(embed=embed)
             
             # Format the warnList to be in a nice format
             formattedWarnList = ""
             for warn in warnList:
                 formattedWarnList = formattedWarnList + warn
-            await ctx.send(formattedWarnList)
+            embed = discord.Embed(title="Warns", description=formattedWarnList, color=discord.Color.blue())
+            await ctx.send(embed=embed)
+            
+@bot.command()
+@commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
+async def kick(ctx, member: discord.Member, *, reason=None):
+    if checkIfBotIsConfigured == False:
+        embed = discord.Embed(title="Bot not setup!", description="Please run the command `{}setupBot` to setup the bot!".format(botPrefix), color=discord.Color.blue())
+        await ctx.send(embed=embed)
+        return
+    else:
+        if reason == None:
+            embed = discord.Embed(title="Please specify a reason!", color=discord.Color.blue())
+            await ctx.send(embed=embed)
+        else:
+            embed = discord.Embed(title="Kicked!", description="{} has been kicked for: {}".format(member.mention, reason), color=discord.Color.blue())
+            await ctx.send(embed=embed)
+            await member.kick(reason=reason)
+            if os.path.exists("botData/punishments/logs/kicks.txt"):
+                with open("botData/punishments/logs/kicks.txt", "a") as f:
+                    f.write(str(member.id) + ":" + reason + "\n")
+                    f.close()
+
+
+@warn.error
+async def warn_error(ctx, error):
+    embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
+    await ctx.send(embed=embed)
+
+@getWarns.error
+async def warn_error(ctx, error):
+    embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
+    await ctx.send(embed=embed)
+
+@kick.error
+async def warn_error(ctx, error):
+    embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
+    await ctx.send(embed=embed)
 
 bot.run(botToken)
     
