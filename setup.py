@@ -18,7 +18,6 @@ try:
     print(colorama.Fore.GREEN + "Please enter the following information: ") # Print "Please enter the following information: " in green
     botToken = input(colorama.Fore.GREEN + "Enter your bot token: " + colorama.Fore.YELLOW) # Ask for the bot's token
     botPrefix = input(colorama.Fore.GREEN + "Enter your bot prefix: " + colorama.Fore.YELLOW) # Ask for the bot's prefix
-    botStatus = input(colorama.Fore.GREEN + "Enter your bot status: " + colorama.Fore.YELLOW) # Ask for the bot's status
 
     # Write the bot's token, prefix, and status to .env
     print(colorama.Fore.GREEN + "Writing to .env...") # Print "Writing to .env..." in green
@@ -26,7 +25,6 @@ try:
     with open(".env", "w") as f: # Open .env as f
         f.write(f"TOKEN={botToken}\n") # Write the bot's token to .env
         f.write(f"PREFIX={botPrefix}\n") # Write the bot's prefix to .env
-        f.write(f"STATUS={botStatus}\n") # Write the bot's status to .env
         f.flush()
         os.fsync(f.fileno())
         

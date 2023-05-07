@@ -89,7 +89,11 @@ def setEnvVariable(variableName, value):
         f.write("\n" + variableName + "=" + value)
         f.close()
 
-
+async def cycleStatus(messages, delay):
+    while True:
+        await bot.change_presence(activity=discord.Game(name=random.choice(messages)))
+        time.sleep(delay)
+    
 
 @bot.event
 async def on_ready():
@@ -103,7 +107,17 @@ async def on_ready():
         with open("botData/roleIDs.txt", "r") as f:
             botRoleID = f.readline().strip()
             permissionsRoleID = f.readline().strip()
-            
+            with open("botData/statusMessages.txt", "r") as f:
+                statusMessages = f.readlines()
+                f.close()
+            with open("botData/statusMessageDelay.txt", "r") as f:
+                statusDelay = f.readline()
+                f.close()
+    
+            print(colorama.Fore.GREEN + "Starting status cycle...")
+            bot.loop.create_task(cycleStatus(statusMessages, statusDelay))
+            print(colorama.Fore.GREEN + "Status cycle started!")
+    
             print(colorama.Fore.GREEN + "Bot role id: " + botRoleID)
             print(colorama.Fore.GREEN + "Permissions role id: " + permissionsRoleID)
             print(colorama.Fore.GREEN + "The bot is ready to use!")
@@ -136,9 +150,6 @@ async def setupBot(ctx):
             else:
                 f.close()
                 await ctx.send("Bot not setup! Setting up...")
-                with open("botData/setup.txt", "w") as f:
-                    f.write("1")
-                    f.close()
                 await ctx.send("Confirming configuration...")
                 await ctx.send("Bot prefix: " + botPrefix)
                 await ctx.send("Bot status: " + botStatus)
@@ -184,7 +195,28 @@ async def setupBot(ctx):
                 with open("botData/punishments/logs/bans.txt", "x") as f:
                     pass
                     f.close()
-                
+                    
+                await ctx.send("Setting up status messages...")
+                await ctx.send("Please enter the amount of status messages you want to set up")
+                message = await bot.wait_for('message', check=check)
+                amountOfStatusMessages = int(message.content)
+                for i in range(amountOfStatusMessages):
+                    message = await ctx.send("Please enter the status message")
+                    message = await bot.wait_for('message', check=check)
+                    statusMessage = message.content
+                    with open("botData/statusMessages.txt", "a") as f:
+                        f.write(statusMessage + "\n")
+                        f.close()
+                await ctx.send("How many seconds do you want to wait between each status message?")
+                message = await bot.wait_for('message', check=check)
+                statusMessageDelay = int(message.content)
+                with open("botData/statusMessageDelay.txt", "a") as f:
+                    f.write(str(statusMessageDelay))
+                    f.close()
+                await ctx.send("Status messages setup!")
+                with open("botData/setup.txt", "w") as f:
+                    f.write("1")
+                    f.close()
                 await ctx.send("Bot setup complete!")
                 
 
