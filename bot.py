@@ -69,6 +69,12 @@ def checkIfBotIsConfigured():
                 return True
             else:
                 return False
+            
+def setEnvVariable(variableName, value):
+    with open(".env", "a") as f:
+        f.write("\n" + variableName + "=" + value)
+        f.close()
+
 
 
 @bot.event
@@ -148,7 +154,7 @@ async def setupBot(ctx):
                 with open("botData/punishments/warns.txt", "x") as f:
                     pass
                     f.close()
-                with open("botData/punishments/mutes.txt", "x") as f:
+                with open("botData/punishments/logs/mutes.txt", "x") as f:
                     pass
                     f.close()
                 with open("botData/punishments/logs/kicks.txt", "x") as f:
@@ -248,6 +254,79 @@ async def kick(ctx, member: discord.Member, *, reason=None):
                 with open("botData/punishments/logs/kicks.txt", "a") as f:
                     f.write(str(member.id) + ":" + reason + "\n")
                     f.close()
+@bot.command()
+@commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
+async def mute(ctx, member: discord.Member, *, reason=None):
+    if checkIfBotIsConfigured == False:
+        embed = discord.Embed(title="Bot not setup!", description="Please run the command `{}setupBot` to setup the bot!".format(botPrefix), color=discord.Color.blue())
+        await ctx.send(embed=embed)
+        return
+    else:
+        muted_role_name = os.getenv("MUTED_ROLE_ID")
+        if muted_role_name is None:
+            embed = discord.Embed(title="Muted role not found!", description="Would you like to create the muted role? (y/n)", color=discord.Color.blue())
+            await ctx.send(embed=embed)
+            def check(m):
+                return m.author == ctx.author and m.channel == ctx.channel
+            msg = await bot.wait_for('message', check=check)
+            if msg.content == "y":
+                role = await ctx.guild.create_role(name="Muted", reason="Muted role created by the bot!")
+                await role.edit(permissions=discord.Permissions(send_messages=False, read_messages=True))
+                setEnvVariable("MUTED_ROLE_ID", role.name)
+                embed = discord.Embed(title="Muted role created!", description="The muted role has been created!", color=discord.Color.blue())
+                await ctx.send(embed=embed)
+                muted_role_name = role.name
+            else:
+                embed = discord.Embed(title="Muted role not created!", description="The muted role has not been created!", color=discord.Color.blue())
+                await ctx.send(embed=embed)
+                return
+        role = discord.utils.get(ctx.guild.roles, name=muted_role_name)
+        if role is None:
+            embed = discord.Embed(title="Muted role not found!", description="The muted role with name {} does not exist on this server. Please create the role or update the MUTED_ROLE_ID environment variable.".format(muted_role_name), color=discord.Color.blue())
+            await ctx.send(embed=embed)
+            return
+        if role in member.roles:
+            embed = discord.Embed(title="User already muted!", description="This user is already muted!", color=discord.Color.blue())
+            await ctx.send(embed=embed)
+            return
+        else:
+            if reason == None:
+                embed = discord.Embed(title="Please specify a reason!", color=discord.Color.blue())
+                await ctx.send(embed=embed)
+                return
+            else:
+                await member.add_roles(role)
+                embed = discord.Embed(title="Muted!", description="{} has been muted for: {}".format(member.mention, reason), color=discord.Color.blue())
+                with open("botData/punishments/logs/mutes.txt", "a") as f:
+                    f.write(str(member.id) + ":" + reason + "MUTED" + "\n")
+                    f.close()
+                await ctx.send(embed=embed)
+
+@bot.command()
+@commands.has_role(os.getenv("PERMISSIONS_ROLE_ID"))
+async def unmute(ctx, member: discord.Member):
+    if checkIfBotIsConfigured == False:
+        embed = discord.Embed(title="Bot not setup!", description="Please run the command `{}setupBot` to setup the bot!".format(botPrefix), color=discord.Color.blue())
+        await ctx.send(embed=embed)
+        return
+    else:
+        muted_role_name = os.getenv("MUTED_ROLE_ID")
+        if muted_role_name is None:
+            embed = discord.Embed(title="Muted role not found!", description="Please run the command `{}mute` to create the muted role!".format(botPrefix), color=discord.Color.blue())
+            await ctx.send(embed=embed)
+        else:
+            role = discord.utils.get(ctx.guild.roles, name=muted_role_name)
+            if role not in member.roles:
+                embed = discord.Embed(title="User not muted!", description="This user is not muted!", color=discord.Color.blue())
+                await ctx.send(embed=embed)
+                return
+            else:
+                await member.remove_roles(role)
+                embed = discord.Embed(title="Unmuted!", description="{} has been unmuted!".format(member.mention), color=discord.Color.blue())
+                with open("botData/punishments/logs/mutes.txt", "a") as f:
+                    f.write(str(member.id) + ":" + "UNMUTED" + "\n")
+                    f.close()
+                await ctx.send(embed=embed)
 
 
 @warn.error
@@ -256,14 +335,24 @@ async def warn_error(ctx, error):
     await ctx.send(embed=embed)
 
 @getWarns.error
-async def warn_error(ctx, error):
+async def getwarns_error(ctx, error):
     embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
     await ctx.send(embed=embed)
 
 @kick.error
-async def warn_error(ctx, error):
+async def kick_error(ctx, error):
     embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
     await ctx.send(embed=embed)
 
+@mute.error
+async def mute_error(ctx, error):
+    embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
+    await ctx.send(embed=embed)
+
+@unmute.error
+async def unmute_error(ctx, error):
+    embed = discord.Embed(title="Permission error or command error!", color=discord.Color.blue())
+    await ctx.send(embex=embed)
+    
 bot.run(botToken)
     
